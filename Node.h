@@ -18,5 +18,9 @@ class Node {
 
   Node<T>*& getRightChild();
   void setRightChild(Node<T>& n);
+  
+  void plusBal();
+  void minusBal();
+  int getBal();
 };
 #endif

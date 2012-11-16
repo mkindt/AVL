@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <list>
 using std::vector;
 
 
@@ -60,7 +61,10 @@ Node<T>* BST<T>::find(int h, int w) {
 template <typename T>
 void BST<T>::insert(T v) {
   Node<T>* temp = new Node<T>(v);
+  Node<T>* trace = new Node<T>(v);
   Node<T>** curr = &root;
+  std::list< Node<T>* >pathway;
+  pathway.push_back(*curr);
   int currH = 0;
   int currW = 0;
   int critH = 0;
@@ -69,16 +73,20 @@ void BST<T>::insert(T v) {
   while (*curr != 0) {
     if (v < (*curr)->getValue()) {
 		curr = &((*curr)->getLeftChild());
+		pathway.push_back(*curr);
 		currW = 2*currW;
 		currH++;
     }
 	else if (v > (*curr)->getValue()) {
 		curr = &((*curr)->getRightChild());
+		pathway.push_back(*curr);
 		currW = (2*currW)+1;
 		currH++;
     }
   }
   if (currH > height){
+	  // if height of tree changes, balance from root to node should be checked
+	  // not true -- if imbalance is found sooner, it will be repaired
 	  balance.push_back(vector<int>());
 	  double sizer = pow(2.0, currH);
 	  for (int i = 0; i < sizer; i++)
@@ -95,18 +103,34 @@ void BST<T>::insert(T v) {
   // if parent is odd, increase bal of gparent by one, etc...
   //  parent is floor of currW/2
   critW = currW;
+  pathway.pop_back();
   for (int i = currH-1; i >= 0; --i){
 	if (critW%2 == 0){
 		critW = critW/2;
+		std::cout << pathway.back() << "LIST ADDRESS\n";
+		trace = pathway.back();
+		trace->minusBal();
+		pathway.pop_back();
+		std::cout << find(i,critW) << " VECTOR FIND\n";
 		balance[i][critW]--;
 	}
 	else {
 		critW = critW/2;
+		std::cout << pathway.back() << "LIST ADDRESS\n";
+		trace = pathway.back();
+		trace->plusBal();
+		pathway.pop_back();
+		std::cout << find(i,critW) << " VECTOR FIND\n";
 		balance[i][critW]++;
 	}
+
 	if (balance[i][critW] < 2 || balance[i][critW] > 4){
 		std::cout << "you need to fix tree at height " << i << " and width " << critW << std::endl;
+		std::cout << find(i,critW) << " VECTOR FIND\n";
 		critH = i;
+	}
+	if (trace->getBal() < 2 || trace->getBal() > 4) {
+		std::cout << trace << "LIST ADDRESS for fix\n";
 		foundImbalance = true;
 		break;
 	}
@@ -114,7 +138,8 @@ void BST<T>::insert(T v) {
 if (foundImbalance) {
 	Node<T>* critical = find(critH, critW);
 	std::cout << "the value of critical is " << critical->getValue() <<std::endl;
-	if (balance[critH][critW] < 2) {
+	std::cout << "the value of trace is " << trace->getValue() <<std::endl;
+	if (trace->getBal() < 2) {
 		// right rotation
 
 	}
@@ -130,7 +155,7 @@ if (foundImbalance) {
 				balance[i][currW]-=2;
 			}	
 		}
-		leftRot(critical);	
+		leftRot(trace);	
 	}
 }
 }
@@ -138,6 +163,9 @@ if (foundImbalance) {
 template <typename T>
 void BST<T>::leftRot(Node<T>* c) {
 	Node<T>* tempRC = c->getRightChild();
+	tempRC->minusBal();
+	c->minusBal();
+	c->minusBal();
 	Node<T>* tempLC = tempRC->getLeftChild();
 	tempRC->setLeftChild(*c);
 	if (c == root)
@@ -180,6 +208,11 @@ void BST<T>::remove(T v) {
 template <typename T>
 void BST<T>::print() {
   traversalPrint(root);
+}
+
+template <typename T>
+void BST<T>::postOrder() {
+  postTraversal(root);
 }
 
 template <typename T>
@@ -243,6 +276,15 @@ void BST<T>::traversalPrint(Node<T>* root) {
     traversalPrint(root->getLeftChild());
     std::cout << root->getValue() << std::endl;
     traversalPrint(root->getRightChild());
+  }
+}
+
+template <typename T>
+void BST<T>::postTraversal(Node<T>* root) {
+  if(root != 0) {
+    postTraversal(root->getLeftChild());
+    postTraversal(root->getRightChild());
+	std::cout << root->getValue() << std::endl;
   }
 }
 

@@ -34,6 +34,22 @@ void Node<T>::setRightChild(Node<T>& rc) {
   rightChild = &rc;
 }
 
+template <typename T>
+void Node<T>::plusBal() {
+  bal++;
+}
+
+template <typename T>
+void Node<T>::minusBal() {
+  bal--;
+}
+
+template <typename T>
+int Node<T>::getBal() {
+  return bal;
+}
+
+
 template class Node<int>;
 template class Node<double>;
 template class Node<std::string>;

@@ -12,6 +12,8 @@ int main() {
   bst->printTree();
   
   bst->insert(154);
+  bst->printTree();
+  
   bst->insert(155);
   
   bst->printTree();
