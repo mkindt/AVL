@@ -9,16 +9,13 @@ using std::vector;
 template <typename T>
 BST<T>::BST() {
   root = 0;
-  balance.push_back(vector<int>());
   height = 0;
   width = 0;
 }
 
 template <typename T>
-BST<T>::~BST() {
-  
+BST<T>::~BST() { 
 }
-
 
 template <typename T>
 bool BST<T>::find(T v) {
@@ -40,10 +37,8 @@ bool BST<T>::find(T v) {
 template <typename T>
 Node<T>* BST<T>::find(int h, int w) {
   Node<T>* curr = root;
-  relativeParent = curr;
   double sizer = pow(2.0, h);
   for (int i = h; i>0; --i){
-	  relativeParent = curr;
 	  sizer = sizer/2;
 	  if (w >= sizer)
 		  curr = (curr)->getRightChild();
@@ -52,22 +47,19 @@ Node<T>* BST<T>::find(int h, int w) {
 	  if (w-sizer >= 0)
 		  w = w-sizer;
   }
-  // cant return node**
   return curr;
 }
-
-
 
 template <typename T>
 void BST<T>::insert(T v) {
   Node<T>* temp = new Node<T>(v);
   Node<T>* trace = new Node<T>(v);
+  Node<T>* relativeParent = new Node<T>(v);
   Node<T>** curr = &root;
   std::list< Node<T>* >pathway;
   pathway.push_back(*curr);
   int currH = 0;
   int currW = 0;
-  int critH = 0;
   int critW = 0;
   bool foundImbalance = false;
   while (*curr != 0) {
@@ -84,84 +76,68 @@ void BST<T>::insert(T v) {
 		currH++;
     }
   }
-  if (currH > height){
-	  // if height of tree changes, balance from root to node should be checked
-	  // not true -- if imbalance is found sooner, it will be repaired
-	  balance.push_back(vector<int>());
-	  double sizer = pow(2.0, currH);
-	  for (int i = 0; i < sizer; i++)
-		balance[currH].push_back(0);
-	  height = currH;
-	  balance[currH][currW] = 3;
-  }
-  if (currH == 0)
-	  balance[currH].push_back(3);
   *curr = temp;
-  //if odd, currW is an RC, even is LC
-  //if odd, increase balance of parent by one
-  // if even, decrease balance of parent by one
-  // if parent is odd, increase bal of gparent by one, etc...
-  //  parent is floor of currW/2
   critW = currW;
   pathway.pop_back();
   for (int i = currH-1; i >= 0; --i){
 	if (critW%2 == 0){
 		critW = critW/2;
-		std::cout << pathway.back() << "LIST ADDRESS\n";
-		trace = pathway.back();
-		trace->minusBal();
-		pathway.pop_back();
-		std::cout << find(i,critW) << " VECTOR FIND\n";
-		balance[i][critW]--;
+		if (trace->getLeftChild() != 0 && trace->getRightChild() != 0 && currH <= height){
+			trace = pathway.back();
+			pathway.pop_back();
+		}
+		else{
+			trace = pathway.back();
+			trace->minusBal();
+			pathway.pop_back();
+		}
 	}
 	else {
 		critW = critW/2;
-		std::cout << pathway.back() << "LIST ADDRESS\n";
-		trace = pathway.back();
-		trace->plusBal();
-		pathway.pop_back();
-		std::cout << find(i,critW) << " VECTOR FIND\n";
-		balance[i][critW]++;
+		if (trace->getLeftChild() != 0 && trace->getRightChild() != 0 && currH <= height){
+			trace = pathway.back();
+			pathway.pop_back();
+		}
+		else{
+			trace = pathway.back();
+			trace->plusBal();
+			pathway.pop_back();
+		}
 	}
 
-	if (balance[i][critW] < 2 || balance[i][critW] > 4){
-		std::cout << "you need to fix tree at height " << i << " and width " << critW << std::endl;
-		std::cout << find(i,critW) << " VECTOR FIND\n";
-		critH = i;
-	}
 	if (trace->getBal() < 2 || trace->getBal() > 4) {
-		std::cout << trace << "LIST ADDRESS for fix\n";
+		if (trace != root)
+			relativeParent = pathway.back();
 		foundImbalance = true;
 		break;
 	}
-}
-if (foundImbalance) {
-	Node<T>* critical = find(critH, critW);
-	std::cout << "the value of critical is " << critical->getValue() <<std::endl;
-	std::cout << "the value of trace is " << trace->getValue() <<std::endl;
-	if (trace->getBal() < 2) {
-		// right rotation
-
-	}
-	else {
-
-		for (int i = currH-1; i >= critH; --i){
-			if (currW%2 == 0){
-				currW = currW/2;
-				balance[i][currW]+=2;
-			}
-			else {
-				currW = currW/2;
-				balance[i][currW]-=2;
-			}	
+  }
+  if (foundImbalance) {
+	if (trace->getBal() < 2){
+		// left children have to exist for this balance
+		if ((trace->getLeftChild())->getBal() == 4){
+			leftRot(trace->getLeftChild(), trace);
+			rightRot(trace, relativeParent);
 		}
-		leftRot(trace);	
+		else
+			rightRot(trace, relativeParent);
 	}
-}
+	else if(trace->getBal() > 4){
+		if ((trace->getRightChild())->getBal() == 2){
+			rightRot(trace->getRightChild(), trace);
+			leftRot(trace, relativeParent);
+		}
+	else
+		leftRot(trace, relativeParent);
+	}
+  }
+  if (currH > height && !foundImbalance){
+	height = currH;
+  }
 }
 
 template <typename T>
-void BST<T>::leftRot(Node<T>* c) {
+void BST<T>::leftRot(Node<T>* c, Node<T>* p) {
 	Node<T>* tempRC = c->getRightChild();
 	tempRC->minusBal();
 	c->minusBal();
@@ -170,21 +146,56 @@ void BST<T>::leftRot(Node<T>* c) {
 	tempRC->setLeftChild(*c);
 	if (c == root)
 		root = tempRC;
-	else if (relativeParent->getLeftChild() == c)
-		relativeParent->setLeftChild(*tempRC);
+	else if (p->getLeftChild() == c)
+		p->setLeftChild(*tempRC);
 	else
-		relativeParent->setRightChild(*tempRC);
+		p->setRightChild(*tempRC);
 	c->setRightChild(*tempLC);
 }
 
 template <typename T>
+void BST<T>::rightRot(Node<T>* c, Node<T>* p) {
+	Node<T>* tempLC = c->getLeftChild();
+	tempLC->plusBal();
+	c->plusBal();
+	c->plusBal();
+	Node<T>* tempRC = tempLC->getRightChild();
+	tempLC->setRightChild(*c);
+	if (c == root)
+		root = tempLC;
+	else if (p->getRightChild() == c)
+		p->setRightChild(*tempLC);
+	else
+		p->setLeftChild(*tempLC);
+	c->setLeftChild(*tempRC);
+}
+
+template <typename T>
 void BST<T>::remove(T v) {
+  std::list< Node<T>* >pathway;
+  std::list< int >LR;
+  Node<T>* trace = new Node<T>(v);
+  Node<T>* relativeParent = new Node<T>(v);
   Node<T>** curr = &root;
+  pathway.push_back(*curr);
+  LR.push_back(0);
+  int currH = 0;
+  int currW = 0;
+  int critW = 0;
+  bool foundImbalance = false;
   while (*curr != 0 && (*curr)->getValue() != v) {
     if (v < (*curr)->getValue()) {
       curr = &((*curr)->getLeftChild());
+	  pathway.push_back(*curr);
+	  LR.push_back(1);
+	  currW = (2*currW);
+	  currH++;
     } else if (v > (*curr)->getValue()) {
       curr = &((*curr)->getRightChild());
+	  pathway.push_back(*curr);
+	  LR.push_back(2);
+	  currW = (2*currW)+1;
+	  currH++;
     }
   }
   if (*curr == 0)
@@ -197,11 +208,75 @@ void BST<T>::remove(T v) {
 	  else{
 		  Node<T>** recall = curr;
 		  curr = &((*curr)->getLeftChild());
-		  while (*curr != 0)
+		  pathway.push_back(*curr);
+		  LR.push_back(1);
+	      currW = (2*currW);
+		  currH++;
+		  while (*curr != 0){
 			  curr = &((*curr)->getRightChild());
+			  pathway.push_back(*curr);
+			  LR.push_back(2);
+			  currW = (2*currW)+1;
+			  currH++;
+		  }
 		  *curr = (*recall)->getRightChild();
 		  *recall = (*recall)->getLeftChild();
 	  }
+  }
+  critW = currW;
+  trace = pathway.back();
+  pathway.pop_back();
+  LR.pop_back();
+  while (trace != root){
+	if (LR.back() == 1){
+		critW = critW/2;
+		LR.pop_back();
+		trace = pathway.back();
+		if (trace->getLeftChild() != 0 && trace->getRightChild() != 0 && currH <= height){
+			pathway.pop_back();
+		}
+		else{
+			trace->minusBal();
+			pathway.pop_back();
+		}
+	}
+	else {
+		LR.pop_back();
+		trace = pathway.back();
+		if (trace->getLeftChild() != 0 && trace->getRightChild() != 0 && currH <= height){
+			pathway.pop_back();
+		}
+		else{
+			trace->plusBal();
+			pathway.pop_back();
+		}
+	}
+
+	if (trace->getBal() < 2 || trace->getBal() > 4) {
+		if (trace != root)
+			relativeParent = pathway.back();
+		foundImbalance = true;
+		break;
+	}
+  }
+  if (foundImbalance) {
+	if (trace->getBal() < 2){
+		// left children have to exist for this balance
+		if ((trace->getLeftChild())->getBal() == 4){
+			leftRot(trace->getLeftChild(), trace);
+			rightRot(trace, relativeParent);
+		}
+		else
+			rightRot(trace, relativeParent);
+	}
+	else if(trace->getBal() > 4){
+		if ((trace->getRightChild())->getBal() == 2){
+			rightRot(trace->getRightChild(), trace);
+			leftRot(trace, relativeParent);
+		}
+	else
+		leftRot(trace, relativeParent);
+	}
   }
 }
 
